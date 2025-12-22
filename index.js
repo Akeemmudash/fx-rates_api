@@ -13,6 +13,14 @@ app.use(express.json())
 
 const PORT = process.env.PORT || 3000
 
+// log unhandled errors to help diagnose abrupt connection drops
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
 loadCacheFromDisk()
 cron.schedule('0 0 * * *', refreshCachedEntries)
 cron.schedule('30 0 * * *', preCacheNairaHistory)

@@ -5,6 +5,9 @@ const path = require("path");
 
 const router = express.Router();
 
+// set a reasonable request timeout to avoid hanging connections
+axios.defaults.timeout = 15000;
+
 const FX_API_V6_URL =
   process.env.FX_API_V6_URL || "https://v6.exchangerate-api.com/v6";
 const FX_API_V6_KEY = process.env.FX_API_V6_KEY;
@@ -142,7 +145,13 @@ async function getHistoricalRatesForBase(base, quotes, dateStr) {
     new Set([...quotes, base !== "EUR" ? base : null].filter(Boolean))
   ).join(",");
   const url = `${HISTORICAL_API_URL}/${dateStr}?access_key=${EXCHANGE_RATES_API_KEY}&symbols=${symbols}`;
-  const { data } = await axios.get(url);
+  let data;
+  try {
+    const resp = await axios.get(url);
+    data = resp.data;
+  } catch (err) {
+    throw new Error(`Historical API request failed: ${err.message}`);
+  }
   if (!data || !data.rates) {
     throw new Error("Invalid response from historical API");
   }
@@ -345,7 +354,39 @@ router.get("/fx/history", async (req, res) => {
       history,
     });
   } catch (error) {
+    console.error(error)
     return res.status(502).json({ error: "Failed to fetch history" });
+  }
+});
+
+router.get("/fx/convert", async (req, res) => {
+  const base = (req.query.base || "USD").toUpperCase();
+  const target = (req.query.target || "NGN").toUpperCase();
+  const amount = Number(req.query.amount || "1");
+
+  if (!FX_API_V6_KEY) {
+    return res.status(500).json({ error: "FX API key missing" });
+  }
+  if (!Number.isFinite(amount)) {
+    return res.status(400).json({ error: "amount must be a number" });
+  }
+
+  try {
+    const rateData = await getPairRate(base, target);
+    const conversion_result = +(amount * rateData.conversion_rate).toFixed(4);
+
+    return res.json({
+      result: "success",
+      base_code: rateData.base_code,
+      target_code: rateData.target_code,
+      amount,
+      conversion_rate: rateData.conversion_rate,
+      conversion_result,
+      time_last_update_utc: rateData.time_last_update_utc,
+      time_next_update_utc: rateData.time_next_update_utc,
+    });
+  } catch (error) {
+    return res.status(502).json({ error: "Failed to convert currency" });
   }
 });
 
