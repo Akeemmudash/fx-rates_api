@@ -354,7 +354,7 @@ router.get("/fx/history", async (req, res) => {
       history,
     });
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return res.status(502).json({ error: "Failed to fetch history" });
   }
 });

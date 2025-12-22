@@ -1,33 +1,37 @@
-require('dotenv').config()
-const express = require('express')
-const cors = require('cors')
-const cron = require('node-cron')
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const cron = require("node-cron");
 
-const { router: fxRouter, loadCacheFromDisk, refreshCachedEntries, preCacheNairaHistory } = require('./routes/fx')
-const { router: tipsRouter } = require('./routes/tips')
+const {
+  router: fxRouter,
+  loadCacheFromDisk,
+  refreshCachedEntries,
+  preCacheNairaHistory,
+} = require("./routes/fx");
+const { router: tipsRouter } = require("./routes/tips");
 
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-const app = express()
-app.use(cors())
-app.use(express.json())
-
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
 
 // log unhandled errors to help diagnose abrupt connection drops
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection:', reason);
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
 });
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
 });
 
-loadCacheFromDisk()
-cron.schedule('0 0 * * *', refreshCachedEntries)
-cron.schedule('30 0 * * *', preCacheNairaHistory)
+loadCacheFromDisk();
+cron.schedule("0 0 * * *", refreshCachedEntries);
+cron.schedule("30 0 * * *", preCacheNairaHistory);
 
-app.use(fxRouter)
-app.use(tipsRouter)
+app.use(fxRouter);
+app.use(tipsRouter);
 
 app.listen(PORT, () => {
-  console.log(`FX rates API running on port ${PORT}`)
-})
+  console.log(`FX rates API running on port ${PORT}`);
+});
