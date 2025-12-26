@@ -38,7 +38,7 @@ function pickTipForDate(dateKey) {
 router.get('/tips', (req, res) => {
   const amount = Math.max(1, Number(req.query.amount) || 500)
   const rounded = Math.round(amount)
-  const placeholder = `₦${rounded}`
+  const placeholder = `${rounded}`
   const dateKey = new Date().toISOString().split('T')[0] 
 
   const rawTip = pickTipForDate(dateKey)
