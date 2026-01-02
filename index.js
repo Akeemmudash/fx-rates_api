@@ -20,10 +20,8 @@ process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
 });
 
-// Connect to MongoDB before starting the server
 connectDB()
   .then(() => {
-    // Schedule cache refresh every day at midnight
     cron.schedule("0 0 * * *", refreshCachedEntries);
 
     app.use(fxRouter);
