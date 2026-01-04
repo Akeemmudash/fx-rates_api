@@ -13,7 +13,6 @@ const router = express.Router();
 
 const FX_API_V6_KEY = process.env.FX_API_V6_KEY;
 
-// GET /fx/rates - Get latest exchange rates for a base currency
 router.get("/fx/rates", async (req, res) => {
   const base = (req.query.base || "NGN").toUpperCase();
   if (!FX_API_V6_KEY) {
@@ -28,7 +27,6 @@ router.get("/fx/rates", async (req, res) => {
   }
 });
 
-// GET /fx/pair - Get conversion rate for a currency pair
 router.get("/fx/pair", async (req, res) => {
   const base = (req.query.base || "USD").toUpperCase();
   const target = (req.query.target || "NGN").toUpperCase();
@@ -160,11 +158,11 @@ router.get("/fx/history", async (req, res) => {
 
     const daysAgo = Date.now() - days * 24 * 60 * 60 * 1000;
 
-    const historicalData = await RateCache.find({
+    const historicalData = await RateCache.find({})
+    .find({
       key: key,
       fetchedAt: { $gte: daysAgo },
     }).sort({ fetchedAt: 1 });
-
     if (!historicalData || historicalData.length === 0) {
       return res.status(404).json({
         error: "No historical data found for this pair",

@@ -6,6 +6,7 @@ const { connectDB } = require("./db/db");
 
 const { router: fxRouter, refreshCachedEntries } = require("./routes/fx");
 const { router: tipsRouter } = require("./routes/tips");
+const { cacheCommonPairs } = require("./controllers/fxController");
 
 const app = express();
 app.use(cors());
@@ -22,7 +23,15 @@ process.on("uncaughtException", (err) => {
 
 connectDB()
   .then(() => {
+    // Cache common currency pairs daily at 1 AM for historical data
+    // Data updates every 24 hours, so once daily is sufficient
+    cron.schedule("0 1 * * *", cacheCommonPairs);
+
+    // Refresh existing cached entries daily at midnight
     cron.schedule("0 0 * * *", refreshCachedEntries);
+
+    // Initial cache on startup
+    cacheCommonPairs();
 
     app.use(fxRouter);
     app.use(tipsRouter);

@@ -3,6 +3,23 @@ const RateCache = require("../models/RateCache");
 
 axios.defaults.timeout = 15000;
 
+// Common currency pairs to cache automatically
+const COMMON_CURRENCY_PAIRS = [
+  { base: "USD", target: "EUR" },
+  { base: "USD", target: "GBP" },
+  { base: "USD", target: "JPY" },
+  { base: "USD", target: "NGN" },
+  { base: "EUR", target: "USD" },
+  { base: "EUR", target: "GBP" },
+  { base: "EUR", target: "NGN" },
+  { base: "GBP", target: "USD" },
+  { base: "GBP", target: "EUR" },
+  { base: "GBP", target: "NGN" },
+  { base: "NGN", target: "USD" },
+  { base: "NGN", target: "EUR" },
+  { base: "NGN", target: "GBP" },
+];
+
 const FX_API_V6_URL =
   process.env.FX_API_V6_URL || "https://v6.exchangerate-api.com/v6";
 const FX_API_V6_KEY = process.env.FX_API_V6_KEY;
@@ -102,12 +119,46 @@ async function refreshCachedEntries() {
   }
 }
 
+/**
+ * Automatically cache predefined common currency pairs
+ * This runs independently of user requests to build historical data
+ */
+async function cacheCommonPairs() {
+  console.log("Starting automated caching of common currency pairs...");
+
+  try {
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const { base, target } of COMMON_CURRENCY_PAIRS) {
+      try {
+        const key = pairKey(base, target);
+        const fresh = await fetchPairRate(base, target);
+        await RateCache.setCache(key, fresh);
+        successCount++;
+        console.log(`✓ Cached ${base}/${target}`);
+      } catch (err) {
+        failCount++;
+        console.error(`✗ Failed to cache ${base}/${target}:`, err.message);
+      }
+    }
+
+    console.log(
+      `Automated caching completed: ${successCount} success, ${failCount} failed`
+    );
+  } catch (err) {
+    console.error("Automated caching failed:", err);
+  }
+}
+
 module.exports = {
   fetchPairRate,
   fetchLatestRates,
   getPairRate,
   getLatestRates,
   refreshCachedEntries,
+  cacheCommonPairs,
   pairKey,
   latestKey,
+  COMMON_CURRENCY_PAIRS,
 };
