@@ -64,12 +64,18 @@ async function getPairRate(base, target) {
     };
   }
 
-  // Get previous rate for change calculation
-  const previousCache = await RateCache.findOne({ key })
+  const fresh = await fetchPairRate(base, target);
+  const currentDate = new Date(fresh.time_last_update_utc)
+    .toISOString()
+    .split("T")[0];
+
+  // Get previous rate from a different day for change calculation
+  const previousCache = await RateCache.findOne({
+    key,
+    fetchedAt: { $lt: new Date(currentDate).getTime() },
+  })
     .sort({ fetchedAt: -1 })
     .limit(1);
-
-  const fresh = await fetchPairRate(base, target);
 
   // Calculate change_percent if previous rate exists
   let changePercent = null;
@@ -149,10 +155,39 @@ async function cacheCommonPairs() {
     for (const { base, target } of COMMON_CURRENCY_PAIRS) {
       try {
         const key = pairKey(base, target);
+
         const fresh = await fetchPairRate(base, target);
-        await RateCache.setCache(key, fresh);
+        const currentDate = new Date(fresh.time_last_update_utc)
+          .toISOString()
+          .split("T")[0];
+
+        // Get previous rate from a different day for change calculation
+        const previousCache = await RateCache.findOne({
+          key,
+          fetchedAt: { $lt: new Date(currentDate).getTime() },
+        })
+          .sort({ fetchedAt: -1 })
+          .limit(1);
+
+        // Calculate change_percent if previous rate exists
+        let changePercent = null;
+        if (
+          previousCache &&
+          previousCache.data &&
+          previousCache.data.conversion_rate
+        ) {
+          const oldRate = previousCache.data.conversion_rate;
+          const newRate = fresh.conversion_rate;
+          changePercent = +(((newRate - oldRate) / oldRate) * 100).toFixed(4);
+        }
+
+        await RateCache.setCache(key, fresh, changePercent);
         successCount++;
-        console.log(`✓ Cached ${base}/${target}`);
+        console.log(
+          `✓ Cached ${base}/${target} (change: ${
+            changePercent !== null ? changePercent + "%" : "N/A"
+          })`
+        );
       } catch (err) {
         failCount++;
         console.error(`✗ Failed to cache ${base}/${target}:`, err.message);

@@ -190,7 +190,7 @@ router.get("/fx/history", async (req, res) => {
         });
       }
     });
-
+    console.log("history", history);
     return res.json({
       result: "success",
       base_code: base,
