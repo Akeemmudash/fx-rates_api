@@ -81,26 +81,33 @@ router.get("/fx/pairs", async (req, res) => {
       quote: quote.toUpperCase(),
     }));
 
-  const bases = Array.from(new Set(pairs.map((p) => p.base)));
-
   try {
-    const latestMap = new Map();
-    await Promise.all(
-      bases.map(async (base) => {
-        const latest = await getLatestRates(base);
-        latestMap.set(base, latest.conversion_rates || {});
+    const result = await Promise.all(
+      pairs.map(async ({ base, quote }) => {
+        try {
+          const rateData = await getPairRate(base, quote);
+          return {
+            base_code: rateData.base_code,
+            target_code: rateData.target_code,
+            conversion_rate: rateData.conversion_rate,
+            change_percent: rateData.change_percent,
+            time_last_update_utc: rateData.time_last_update_utc,
+            time_next_update_utc: rateData.time_next_update_utc,
+          };
+        } catch (error) {
+          console.error(`Error fetching pair ${base}:${quote}`, error);
+          return {
+            base_code: base,
+            target_code: quote,
+            conversion_rate: null,
+            change_percent: null,
+            time_last_update_utc: null,
+            time_next_update_utc: null,
+            error: "Failed to fetch rate",
+          };
+        }
       })
     );
-
-    const result = pairs.map(({ base, quote }) => {
-      const currentRates = latestMap.get(base) || {};
-      const rate = currentRates[quote] ?? null;
-      return {
-        base,
-        quote,
-        rate,
-      };
-    });
 
     return res.json({ result: "success", pairs: result });
   } catch (error) {
