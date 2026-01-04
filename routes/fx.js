@@ -49,6 +49,7 @@ router.get("/fx/pair", async (req, res) => {
         target_code: rateData.target_code,
         conversion_rate: rateData.conversion_rate,
         conversion_result,
+        change_percent: rateData.change_percent,
         time_last_update_utc: rateData.time_last_update_utc,
         time_next_update_utc: rateData.time_next_update_utc,
       },
@@ -131,6 +132,7 @@ router.get("/fx/convert", async (req, res) => {
       amount,
       conversion_rate: rateData.conversion_rate,
       conversion_result,
+      change_percent: rateData.change_percent,
       time_last_update_utc: rateData.time_last_update_utc,
       time_next_update_utc: rateData.time_next_update_utc,
     });
@@ -159,10 +161,11 @@ router.get("/fx/history", async (req, res) => {
     const daysAgo = Date.now() - days * 24 * 60 * 60 * 1000;
 
     const historicalData = await RateCache.find({})
-    .find({
-      key: key,
-      fetchedAt: { $gte: daysAgo },
-    }).sort({ fetchedAt: 1 });
+      .find({
+        key: key,
+        fetchedAt: { $gte: daysAgo },
+      })
+      .sort({ fetchedAt: 1 });
     if (!historicalData || historicalData.length === 0) {
       return res.status(404).json({
         error: "No historical data found for this pair",
@@ -181,6 +184,7 @@ router.get("/fx/history", async (req, res) => {
         history.push({
           date: date,
           rate: entry.data.conversion_rate,
+          change_percent: entry.change_percent,
           fetchedAt: entry.fetchedAt,
           time_last_update_utc: entry.data.time_last_update_utc,
         });

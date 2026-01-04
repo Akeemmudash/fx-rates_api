@@ -23,14 +23,11 @@ process.on("uncaughtException", (err) => {
 
 connectDB()
   .then(() => {
-    // Cache common currency pairs daily at 1 AM for historical data
-    // Data updates every 24 hours, so once daily is sufficient
+
     cron.schedule("0 1 * * *", cacheCommonPairs);
 
-    // Refresh existing cached entries daily at midnight
     cron.schedule("0 0 * * *", refreshCachedEntries);
 
-    // Initial cache on startup
     cacheCommonPairs();
 
     app.use(fxRouter);

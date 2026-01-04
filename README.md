@@ -120,7 +120,6 @@ curl "http://localhost:3000/fx/pair?base=USD&target=NGN&amount=100"
     "conversion_rate": 1453.285,
     "conversion_result": 145328.5,
     "change_percent": 0.11,
-    "date": "2026-01-04",
     "time_last_update_utc": "Sat, 04 Jan 2026 00:00:00 +0000",
     "time_next_update_utc": "Sun, 05 Jan 2026 00:00:00 +0000"
   }
@@ -185,7 +184,6 @@ curl "http://localhost:3000/fx/convert?base=USD&target=NGN&amount=50"
   "conversion_rate": 1453.285,
   "conversion_result": 72664.25,
   "change_percent": 0.11,
-  "date": "2026-01-04",
   "time_last_update_utc": "Sat, 04 Jan 2026 00:00:00 +0000",
   "time_next_update_utc": "Sun, 05 Jan 2026 00:00:00 +0000"
 }
@@ -243,7 +241,6 @@ curl "http://localhost:3000/fx/history?base=USD&quote=NGN&days=30"
 - ✅ **Automatic Change Calculation**: Daily percentage change calculated automatically by comparing with previous rates
 - ✅ **Smart Caching**: Rates cached for 24 hours based on API update schedule
 - ✅ **Automated Daily Caching**: Cron job runs daily at 1 AM to cache common currency pairs (USD, EUR, GBP, CAD to NGN)
-- ✅ **Date Tracking**: Exchange rate dates extracted and stored from API responses
 - ✅ **Multiple Endpoints**: Support for single pairs, multiple pairs, conversion, and historical data
 - ✅ **MongoDB Persistence**: Full historical rate data with indexed queries for fast retrieval
 
@@ -271,7 +268,6 @@ The `RateCache` collection stores all rate data with the following fields:
 - `fetchedAt`: Timestamp when the data was cached
 - `timeNextUpdateUtc`: Next update time from the API
 - `change_percent`: Daily percentage change (calculated automatically)
-- `date`: ISO date string (YYYY-MM-DD) of the exchange rate
 - `createdAt`, `updatedAt`: Mongoose timestamps
 
 **Indexes:**
@@ -279,6 +275,5 @@ The `RateCache` collection stores all rate data with the following fields:
 - `{ key: 1, fetchedAt: -1 }` - Fast retrieval of latest rates
 - `{ key: 1 }` - Quick lookups by cache key
 - `{ timeNextUpdateUtc: 1 }` - Efficient cache expiration checks
-- `{ date: 1 }` - Fast historical queries by date
 
 Multiple entries can exist for the same key, enabling complete historical tracking.

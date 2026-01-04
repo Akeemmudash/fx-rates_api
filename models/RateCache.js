@@ -20,6 +20,10 @@ const rateCacheSchema = new mongoose.Schema(
       type: Date,
       index: true,
     },
+    change_percent: {
+      type: Number,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -32,7 +36,11 @@ rateCacheSchema.statics.getCache = async function (key) {
   return await this.findOne({ key }).sort({ fetchedAt: -1 });
 };
 
-rateCacheSchema.statics.setCache = async function (key, data) {
+rateCacheSchema.statics.setCache = async function (
+  key,
+  data,
+  changePercent = null
+) {
   const timeNextUpdateUtc = data.time_next_update_utc
     ? new Date(data.time_next_update_utc)
     : null;
@@ -42,6 +50,7 @@ rateCacheSchema.statics.setCache = async function (key, data) {
     data,
     fetchedAt: Date.now(),
     timeNextUpdateUtc,
+    change_percent: changePercent,
   });
 };
 

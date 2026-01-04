@@ -5,19 +5,10 @@ axios.defaults.timeout = 15000;
 
 // Common currency pairs to cache automatically
 const COMMON_CURRENCY_PAIRS = [
-  { base: "USD", target: "EUR" },
-  { base: "USD", target: "GBP" },
-  { base: "USD", target: "JPY" },
   { base: "USD", target: "NGN" },
-  { base: "EUR", target: "USD" },
-  { base: "EUR", target: "GBP" },
   { base: "EUR", target: "NGN" },
-  { base: "GBP", target: "USD" },
-  { base: "GBP", target: "EUR" },
   { base: "GBP", target: "NGN" },
-  { base: "NGN", target: "USD" },
-  { base: "NGN", target: "EUR" },
-  { base: "NGN", target: "GBP" },
+  { base: "CAD", target: "NGN" },
 ];
 
 const FX_API_V6_URL =
@@ -67,12 +58,37 @@ async function getPairRate(base, target) {
   const cached = await RateCache.getCache(key);
 
   if (RateCache.isFresh(cached)) {
-    return cached.data;
+    return {
+      ...cached.data,
+      change_percent: cached.change_percent,
+    };
   }
 
+  // Get previous rate for change calculation
+  const previousCache = await RateCache.findOne({ key })
+    .sort({ fetchedAt: -1 })
+    .limit(1);
+
   const fresh = await fetchPairRate(base, target);
-  await RateCache.setCache(key, fresh);
-  return fresh;
+
+  // Calculate change_percent if previous rate exists
+  let changePercent = null;
+  if (
+    previousCache &&
+    previousCache.data &&
+    previousCache.data.conversion_rate
+  ) {
+    const oldRate = previousCache.data.conversion_rate;
+    const newRate = fresh.conversion_rate;
+    changePercent = +(((newRate - oldRate) / oldRate) * 100).toFixed(4);
+  }
+
+  await RateCache.setCache(key, fresh, changePercent);
+
+  return {
+    ...fresh,
+    change_percent: changePercent,
+  };
 }
 
 async function getLatestRates(base) {
